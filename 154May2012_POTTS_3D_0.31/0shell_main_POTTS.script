@@ -1,0 +1,293 @@
+#!/bin/sh
+# Chuong ve dong thoi 2 hoac 3 do thi (dung de tim hieu ung)
+# this is script-shell for collection result from osaka
+
+# ===========================================================================================
+# Lua chon buoc tien hanh
+# ===========================================================================================
+
+echo -n "Choise a chapter (1 for Compile, 2 for Collection, 3 for Complie with MP, 4 for Collection with MP) : "
+read number_buoc
+# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# ===========================================================================================
+# ===========================================================================================
+#  ****************** BUOC COMPILE ******************
+# ===========================================================================================
+# ===========================================================================================
+# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+# ===========================================================================================
+# Nhap cac gia tri vao
+# ===========================================================================================
+if [ $number_buoc -eq 1 ]
+then
+echo "BUOC COMPILE"
+
+clear
+rm -r config_ini_3D
+rm -r config_3D
+rm *.dat
+rm a.out
+
+echo -n "Value Tmin = "
+read Tmin
+
+echo -n "Value Tmax = "
+read Tmax
+
+echo -n "Value nT = "
+read nT
+
+if [ $nT -eq 1 ]
+then
+delT=0
+else
+delT=$(echo "scale=4; ($Tmax-$Tmin)/($nT-1)" | bc)
+fi
+echo "delT=$delT"
+
+# ===========================================================================================
+# Tao cac thu muc, compile lan luot tung thu muc
+# ===========================================================================================
+mkdir a
+cp 1main_POTTS.f90 a
+cp 1parameter.in a
+cp 0job a
+
+cp 3shell_MP.script a
+cp 3cacul_MP.f90 a
+cp 3plot_P_MP.script a
+
+
+
+i_folder=1
+while [ $i_folder -le $nT ]
+do
+cp -r a $i_folder
+
+T=$(echo "scale=4; $Tmin+($i_folder-1)*$delT" | bc)
+
+sed -i "s/'Tmin                      '  1.0/'Tmin                      '  $T/g" $i_folder/1parameter.in
+
+echo "running folder $i_folder"
+cd $i_folder
+gfortran -Wall -fdefault-integer-8 -fdefault-real-8 1main_POTTS.f90
+qsub 0job
+#./a.out
+
+cd ..
+
+i_folder=$(echo "scale=0; $i_folder+1" | bc)
+
+done
+
+rm -r a
+
+fi
+
+# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# ===========================================================================================
+# ===========================================================================================
+#  ****************** BUOC TONG HOP KET QUA ******************
+# ===========================================================================================
+# ===========================================================================================
+# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+# ===========================================================================================
+# Nhap cac gia tri vao
+# ===========================================================================================
+if [ $number_buoc -eq 2 ]
+then
+echo "BUOC TONG HOP KET QUA SAU KHI COMPILE"
+
+echo -n "Number of value temperature nT = "
+read nT
+
+# ===========================================================================================
+# Tien hanh tong hop ket qua
+# ===========================================================================================
+
+echo "Copy config ini 3D"
+mkdir config_ini_3D
+cp 1/config_ini_3D/config_ini_3D_POTTS.pdb config_ini_3D/
+
+mkdir config_3D
+
+i=1
+while [ $i -le $nT ]
+do
+number=$(echo "scale=0;10000000+$i" | bc)
+#cp $i/config_3D/config_3D_POTTS_10000001.pdb config_3D/config_3D_POTTS_$number.pdb
+cat $i/average_thermal.dat >> average_thermal.dat
+cat $i/average_thermal_effect.dat >> average_thermal_effect.dat
+
+rm -r $i
+i=$(echo "scale=0; $i+1" | bc)
+done
+
+fi
+
+# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# ===========================================================================================
+# ===========================================================================================
+#  ****************** BUOC COMPILE VOI MP ******************
+# ===========================================================================================
+# ===========================================================================================
+# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+if [ $number_buoc -eq 3 ]
+then
+echo "BUOC COMPILE"
+
+clear
+rm -r config_ini_3D
+rm -r config_3D
+rm *.dat
+rm a.out
+
+echo -n "Value Tmin = "
+read Tmin
+
+echo -n "Value Tmax = "
+read Tmax
+
+echo -n "Value nT = "
+read nT
+
+echo -n "Value nF/T = "
+read nF
+
+if [ $nT -eq 1 ]
+then
+delT=0
+else
+delT=$(echo "scale=4; ($Tmax-$Tmin)/($nT-1)" | bc)
+fi
+echo "delT=$delT"
+
+# ============================
+
+mkdir a
+cp 1main_POTTS.f90 a
+cp 1parameter.in a
+cp 0job a
+
+cp 2plot_histo.script a
+cp 2shell_plot_histo.script a
+cp 3cacul_MP.f90 a
+
+
+i_folder=1
+while [ $i_folder -le $nT ]
+do
+cp -r a $i_folder
+
+T=$(echo "scale=4; $Tmin+($i_folder-1)*$delT" | bc)
+
+sed -i "s/'Tmin                      '  1.0/'Tmin                      '  $T/g" $i_folder/1parameter.in
+
+echo "running folder $i_folder"
+cd $i_folder
+
+
+# Thuc hien tinh MP tai 1 gia tri nhiet do ------------------
+mkdir a1
+cp 1main_POTTS.f90 a1
+cp 1parameter.in a1
+cp 0job a1
+
+
+i1_folder=1
+while [ $i1_folder -le $nF ]
+do
+cp -r a1 $i1_folder
+
+echo "running folder $i1_folder"
+cd $i1_folder
+gfortran -Wall -fdefault-integer-8 -fdefault-real-8 1main_POTTS.f90
+qsub 0job
+#./a.out
+cd ..
+
+i1_folder=$(echo "scale=0; $i1_folder+1" | bc)
+
+done
+# ---------------------------------------------------------------
+
+cd ..
+
+i_folder=$(echo "scale=0; $i_folder+1" | bc)
+
+done
+
+rm -r a
+
+fi
+
+# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# ===========================================================================================
+# ===========================================================================================
+#  ****************** BUOC TONG HOP KET QUA VOI MP ******************
+# ===========================================================================================
+# ===========================================================================================
+# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+# ===========================================================================================
+# Nhap cac gia tri vao
+# ===========================================================================================
+if [ $number_buoc -eq 4 ]
+then
+echo "BUOC TONG HOP KET QUA VOI MP"
+
+echo -n "Number of value temperature nT = "
+read nT
+
+# ===========================================================================================
+# Tien hanh tong hop ket qua
+# ===========================================================================================
+
+rm average_thermal.dat
+
+echo "Copy config ini 3D"
+mkdir config_ini_3D
+cp 1/1/config_ini_3D/config_ini_3D_POTTS.pdb config_ini_3D/
+
+mkdir config_3D
+
+
+
+i=1
+while [ $i -le $nT ]
+do
+
+
+cd $i
+rm 3cacul_MP.f90
+cd ..
+
+cp 3cacul_MP.f90 $i
+cd $i
+gfortran -Wall -fdefault-integer-8 -fdefault-real-8 3cacul_MP.f90
+./a.out
+
+cd ..
+
+
+number=$(echo "scale=0;10000000+$i" | bc)
+cp $i/1/config_3D/config_3D_POTTS_10000001.pdb config_3D/config_3D_POTTS_$number.pdb
+cat $i/average_thermal.dat >> average_thermal.dat
+
+#rm -r $i
+i=$(echo "scale=0; $i+1" | bc)
+done
+
+fi
+
+
+# ================================= THE END ============================================
+
+
+
+
+
+

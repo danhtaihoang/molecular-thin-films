@@ -1,0 +1,226 @@
+#!/bin/sh
+
+# =============================================================================================
+# =============================================================================================
+# DOC CAC GIA TRI TU FILE PARAMETER
+# =============================================================================================
+# =============================================================================================
+
+#=============================================================================================
+# Loai bo, chi lay tu cot 31 den cot 35 cua file parameter.in
+cut -c31-35 1parameter.in > parameter_file_giantiep.dat
+
+# Doc gia tri dua vao so dong
+i=1
+while [ $i -le 30 ]
+do
+read value
+
+if [ $i -eq 6 ]
+then
+motif_struct=$value
+fi
+
+if [ $i -eq 7 ]
+then
+lattice=$value
+fi
+
+if [ $i -eq 11 ]
+then
+GS=$value
+fi
+
+if [ $i -eq 17 ]
+then
+natx=$value
+fi
+
+if [ $i -eq 18 ]
+then
+naty=$value
+fi
+
+if [ $i -eq 19 ]
+then
+natz=$value
+fi
+
+if [ $i -eq 23 ]
+then
+P_config=$value
+fi
+
+if [ $i -eq 25 ]
+then
+J2=$value
+fi
+
+if [ $i -eq 27 ]
+then
+Js=$value
+fi
+
+if [ $i -eq 28 ]
+then
+D=$value
+fi
+
+if [ $i -eq 29 ]
+then
+A=$value
+fi
+
+if [ $i -eq 30 ]
+then
+r0=$value
+fi
+
+i=$(echo "scale=0; $i+1" | bc)
+done < parameter_file_giantiep.dat
+
+rm parameter_file_giantiep.dat
+
+echo "motif_struct: " $motif_struct
+echo "Lattice: " $lattice
+echo "Natx = " $natx
+echo "Naty = " $naty
+echo "Natz = " $natz
+echo "P_config: " $P_config
+
+
+# =============================================================================================
+# =============================================================================================
+# GAN CAC DAI LUONG CAN VE DO THI
+# =============================================================================================
+# =============================================================================================
+
+for i in 1 2 3 4 5 6
+do
+
+# Gan cac bien cua Nang luong E
+if [ $i -eq 1 ]
+then
+name_y="E"
+number_culomn=2
+file_average_dat="average_thermal.dat"
+fi
+
+# Gan cac bien cua M
+if [ $i -eq 2 ]
+then
+name_y="M"
+number_culomn=3
+file_average_dat="average_thermal.dat"
+fi
+
+# Gan cac bien cua Cv
+if [ $i -eq 3 ]
+then
+name_y="Cv"
+number_culomn=4
+file_average_dat="average_thermal.dat"
+fi
+
+
+# Gan cac bien cua Ksi
+if [ $i -eq 4 ]
+then
+name_y="Ksi"
+number_culomn=5
+file_average_dat="average_thermal.dat"
+fi
+
+# Gan cac bien cua Mx
+if [ $i -eq 5 ]
+then
+name_y="Mx"
+number_culomn=6
+file_average_dat="average_thermal.dat"
+fi
+
+# Gan cac bien cua Mz
+if [ $i -eq 6 ]
+then
+name_y="Mz"
+number_culomn=7
+file_average_dat="average_thermal.dat"
+fi
+
+# Gan cac bien cua M1
+if [ $i -eq 7 ]
+then
+name_y="M1"
+number_culomn=8
+file_average_dat="average_thermal.dat"
+fi
+
+# Gan cac bien cua M2
+if [ $i -eq 8 ]
+then
+name_y="M2"
+number_culomn=9
+file_average_dat="average_thermal.dat"
+fi
+# =============================================================================================
+# =============================================================================================
+# VE DO THI
+# =============================================================================================
+# =============================================================================================
+
+gnuplot -persist << EOF
+set term postscript enhanced color "Times-Roman" 25
+set autoscale
+set key right top
+set pointsize 0.8
+set xlabel "T"
+set ylabel "$name_y"
+set output "$name_y in T.eps"
+set title "$motif_struct $lattice : $natx x$naty x$natz Js=$Js ; D=$D ; A=$A ; r0=$r0 ; $GS"
+plot "$file_average_dat" u 1:$number_culomn notitle w p lt 3 pt 7
+
+EOF
+done
+
+gnuplot -persist << EOF
+set term postscript enhanced color "Times-Roman" 14
+set autoscale
+set key right top
+set pointsize 1
+set xlabel "T"
+set ylabel "M"
+set output "M-Mx-Mz.ps"
+set title "$motif_struct $lattice : $natx x$naty x$natz Js=$Js ; D=$D ; A=$A ; r0=$r0 ; $GS"
+plot "average_thermal.dat" u 1:3 t "M" w p lt -1 pt 7,\
+"average_thermal.dat" u 1:6 t "Mx" w p lt 3 pt 65,\
+"average_thermal.dat" u 1:7 t "Mz" w p lt 1 pt 13
+EOF
+
+gnuplot -persist << EOF
+set term postscript enhanced color "Times-Roman" 14
+set autoscale
+set key right top
+set pointsize 1
+set xlabel "T"
+set ylabel "M"
+set output "M-M1-M2.ps"
+set title "$motif_struct $lattice : $natx x$naty x$natz Js=$Js ; D=$D ; A=$A ; r0=$r0 ; $GS"
+plot "average_thermal.dat" u 1:3 t "M" w p lt -1 pt 7,\
+"average_thermal.dat" u 1:8 t "M1-s" w p lt 3 pt 65,\
+"average_thermal.dat" u 1:9 t "M2-v" w p lt 1 pt 13
+EOF
+
+gnuplot -persist << EOF
+set term postscript enhanced color "Times-Roman" 14
+set autoscale
+set key right top
+set pointsize 1
+set xlabel "T"
+set ylabel "Ksi"
+set output "Ksi-s-Ksi-v.ps"
+set title "$motif_struct $lattice : $natx x$naty x$natz Js=$Js ; D=$D ; A=$A ; r0=$r0 ; $GS"
+plot "average_thermal_effect.dat" u 1:2 t "Ksi-s" w p lt 3 pt 65,\
+"average_thermal_effect.dat" u 1:3 t "Ksi-v" w p lt 1 pt 13
+EOF
+
+
